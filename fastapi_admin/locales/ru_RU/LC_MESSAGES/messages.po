@@ -122,7 +122,7 @@ msgstr "Действия"
 #: fastapi_admin/templates/list.html:156
 #, python-format
 msgid "Showing %(from)s to %(to)s of %(total)s entries"
-msgstr "Показывать %(from)s to %(to)s из %(total)s записей"
+msgstr "Показывать от %(from)s до %(to)s из %(total)s записей"
 
 #: fastapi_admin/templates/list.html:167
 msgid "prev_page"
