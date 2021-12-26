@@ -3,6 +3,8 @@ import uuid
 from typing import Type
 
 from aioredis import Redis
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHash, VerifyMismatchError
 from fastapi import Depends, Form
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
@@ -16,7 +18,6 @@ from fastapi_admin.i18n import _
 from fastapi_admin.models import AbstractAdmin
 from fastapi_admin.providers import Provider
 from fastapi_admin.template import templates
-from fastapi_admin.utils import check_password, hash_password
 
 if typing.TYPE_CHECKING:
     from fastapi_admin.app import FastAPIAdmin
@@ -28,13 +29,13 @@ class UsernamePasswordProvider(Provider):
     access_token = "access_token"
 
     def __init__(
-        self,
-        admin_model: Type[AbstractAdmin],
-        login_path="/login",
-        logout_path="/logout",
-        template="providers/login/login.html",
-        login_title="Login to your account",
-        login_logo_url: str = None,
+            self,
+            admin_model: Type[AbstractAdmin],
+            login_path="/login",
+            logout_path="/logout",
+            template="providers/login/login.html",
+            login_title="Login to your account",
+            login_logo_url: str = None,
     ):
         self.login_path = login_path
         self.logout_path = logout_path
@@ -42,10 +43,11 @@ class UsernamePasswordProvider(Provider):
         self.admin_model = admin_model
         self.login_title = login_title
         self.login_logo_url = login_logo_url
+        self._password_hasher = PasswordHasher()
 
     async def login_view(
-        self,
-        request: Request,
+            self,
+            request: Request,
     ):
         return templates.TemplateResponse(
             self.template,
@@ -73,9 +75,9 @@ class UsernamePasswordProvider(Provider):
         if instance.pk:
             db_obj = await instance.get(pk=instance.pk)
             if db_obj.password != instance.password:
-                instance.password = hash_password(instance.password)
+                instance.password = self._password_hasher.hash(instance.password)
         else:
-            instance.password = hash_password(instance.password)
+            instance.password = self._password_hasher.hash(instance.password)
 
     async def login(self, request: Request, redis: Redis = Depends(get_redis)):
         form = await request.form()
@@ -83,12 +85,13 @@ class UsernamePasswordProvider(Provider):
         password = form.get("password")
         remember_me = form.get("remember_me")
         admin = await self.admin_model.get_or_none(username=username)
-        if not admin or not check_password(password, admin.password):
+        if not admin or not await self._check_password(admin, password):
             return templates.TemplateResponse(
                 self.template,
                 status_code=HTTP_401_UNAUTHORIZED,
                 context={"request": request, "error": _("login_failed")},
             )
+
         response = RedirectResponse(url=request.app.admin_path, status_code=HTTP_303_SEE_OTHER)
         if remember_me == "on":
             expire = 3600 * 24 * 30
@@ -115,9 +118,9 @@ class UsernamePasswordProvider(Provider):
         return response
 
     async def authenticate(
-        self,
-        request: Request,
-        call_next: RequestResponseEndpoint,
+            self,
+            request: Request,
+            call_next: RequestResponseEndpoint,
     ):
         redis = request.app.redis  # type:Redis
         token = request.cookies.get(self.access_token)
@@ -145,8 +148,8 @@ class UsernamePasswordProvider(Provider):
         return templates.TemplateResponse("init.html", context={"request": request})
 
     async def init(
-        self,
-        request: Request,
+            self,
+            request: Request,
     ):
         exists = await self.admin_model.all().limit(1).exists()
         if exists:
@@ -170,9 +173,9 @@ class UsernamePasswordProvider(Provider):
         )
 
     async def password_view(
-        self,
-        request: Request,
-        resources=Depends(get_resources),
+            self,
+            request: Request,
+            resources=Depends(get_resources),
     ):
         return templates.TemplateResponse(
             "providers/login/password.html",
@@ -182,25 +185,41 @@ class UsernamePasswordProvider(Provider):
             },
         )
 
+    async def _check_password(self, admin: AbstractAdmin, password: str) -> bool:
+        try:
+            self._password_hasher.verify(admin.password, password)
+        except (InvalidHash, VerifyMismatchError):
+            return False
+
+        if self._password_hasher.check_needs_rehash(admin.password):
+            await self.admin_model.filter(username=admin.username).update(
+                password=self._password_hasher.hash(admin.password)
+            )
+
+        return True
+
     async def password(
-        self,
-        request: Request,
-        old_password: str = Form(...),
-        new_password: str = Form(...),
-        re_new_password: str = Form(...),
-        admin: AbstractAdmin = Depends(get_current_admin),
-        resources=Depends(get_resources),
+            self,
+            request: Request,
+            old_password: str = Form(...),
+            new_password: str = Form(...),
+            re_new_password: str = Form(...),
+            admin: AbstractAdmin = Depends(get_current_admin),
+            resources=Depends(get_resources),
     ):
         error = None
-        if not check_password(old_password, admin.password):
+        if not self._check_password(admin, old_password):
             error = _("old_password_error")
-        elif new_password != re_new_password:
+
+        if new_password != re_new_password:
             error = _("new_password_different")
+
         if error:
             return templates.TemplateResponse(
                 "password.html",
                 context={"request": request, "resources": resources, "error": error},
             )
+
         admin.password = new_password
         await admin.save(update_fields=["password"])
         return await self.logout(request)

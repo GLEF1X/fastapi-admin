@@ -32,6 +32,7 @@ python-multipart = "*"
 tortoise-orm = "*"
 uvicorn = { version = "*", extras = ["standard"] }
 pendulum = "*"
+argon2-cffi = "^21.3.0"
 
 [tool.poetry.dev-dependencies]
 # test
