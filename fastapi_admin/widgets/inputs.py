@@ -126,8 +126,7 @@ class ManyToMany(Select):
 
     async def get_options(self):
         ret = await self.get_queryset()
-        options = [dict(label=str(x), value=x.pk) for x in ret]
-        return options
+        return [dict(label=str(x), value=x.pk) for x in ret]
 
     async def get_queryset(self):
         return await self.model.all()
@@ -267,9 +266,7 @@ class Switch(Input):
     template = "widgets/inputs/switch.html"
 
     async def parse_value(self, request: Request, value: str):
-        if value == "on":
-            return True
-        return False
+        return value == "on"
 
 
 class Password(Text):
