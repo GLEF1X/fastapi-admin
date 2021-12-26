@@ -186,11 +186,12 @@ class Model(Resource):
 
     @classmethod
     def _get_fields_attr(cls, attr: str, display: bool = True):
-        ret = []
-        for field in cls.get_fields():
-            if display and isinstance(field.display, displays.InputOnly):
-                continue
-            ret.append(getattr(field, attr))
+        ret = [
+            getattr(field, attr)
+            for field in cls.get_fields()
+            if not display or not isinstance(field.display, displays.InputOnly)
+        ]
+
         return ret or cls.model._meta.db_fields
 
     @classmethod

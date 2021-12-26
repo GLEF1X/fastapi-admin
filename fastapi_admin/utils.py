@@ -8,10 +8,7 @@ def generate_random_str(
     length: int,
     is_digit: bool = True,
 ):
-    if is_digit:
-        all_char = string.digits
-    else:
-        all_char = string.ascii_letters + string.digits
+    all_char = string.digits if is_digit else string.ascii_letters + string.digits
     return "".join(random.sample(all_char, length))
 
 
