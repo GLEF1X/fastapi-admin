@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any
 
 from starlette.requests import Request
 
@@ -52,3 +52,8 @@ class Json(Display):
 
     async def render(self, request: Request, value: dict):
         return await super(Json, self).render(request, json.dumps(value))
+
+
+class EnumDisplay(Display):
+    template = ""
+

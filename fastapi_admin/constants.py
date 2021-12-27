@@ -1,6 +1,6 @@
-import os
+import pathlib
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = pathlib.Path(__name__).resolve().parent
 # time format
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 DATE_FORMAT = "%Y-%m-%d"

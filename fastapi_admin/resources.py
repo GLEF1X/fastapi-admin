@@ -11,7 +11,7 @@ from tortoise.queryset import QuerySet
 
 from fastapi_admin.enums import Method
 from fastapi_admin.exceptions import NoSuchFieldFound
-from fastapi_admin.i18n import _
+from fastapi_admin.i18n.context import gettext as _
 from fastapi_admin.widgets import Widget, displays, inputs
 from fastapi_admin.widgets.filters import Filter, Search
 
@@ -37,11 +37,11 @@ class Field:
     input: inputs.Input
 
     def __init__(
-        self,
-        name: str,
-        label: Optional[str] = None,
-        display: Optional[displays.Display] = None,
-        input_: Optional[Widget] = None,
+            self,
+            name: str,
+            label: Optional[str] = None,
+            display: Optional[displays.Display] = None,
+            input_: Optional[Widget] = None,
     ):
         self.name = name
         self.label = label or name.title()
@@ -263,12 +263,12 @@ class Model(Resource):
                 if field.name == pk_column:
                     continue
                 if (is_display and isinstance(field.display, displays.InputOnly)) or (
-                    not is_display and isinstance(field.input, inputs.DisplayOnly)
+                        not is_display and isinstance(field.input, inputs.DisplayOnly)
                 ):
                     continue
             if (
-                field.name in cls.model._meta.fetch_fields
-                and field.name not in cls.model._meta.fk_fields | cls.model._meta.m2m_fields
+                    field.name in cls.model._meta.fetch_fields
+                    and field.name not in cls.model._meta.fk_fields | cls.model._meta.m2m_fields
             ):
                 continue
             ret.append(field)
@@ -295,11 +295,11 @@ class Dropdown(Resource):
 
 
 async def render_values(
-    request: Request,
-    model: "Model",
-    fields: List["Field"],
-    values: List[Dict[str, Any]],
-    display: bool = True,
+        request: Request,
+        model: "Model",
+        fields: List["Field"],
+        values: List[Dict[str, Any]],
+        display: bool = True,
 ) -> Tuple[List[List[Any]], List[dict], List[dict], List[List[dict]]]:
     """
     render values with template render

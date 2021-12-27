@@ -14,7 +14,7 @@ from tortoise import signals
 
 from fastapi_admin import constants
 from fastapi_admin.depends import get_current_admin, get_redis, get_resources
-from fastapi_admin.i18n import _
+from fastapi_admin.i18n.context import lazy_gettext as _
 from fastapi_admin.models import AbstractAdmin
 from fastapi_admin.providers import Provider
 from fastapi_admin.template import templates

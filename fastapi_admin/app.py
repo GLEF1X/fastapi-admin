@@ -5,7 +5,6 @@ from fastapi import FastAPI
 from pydantic import HttpUrl
 from tortoise import Model
 
-from fastapi_admin import i18n
 from . import template
 from .providers import Provider
 from .resources import Dropdown
@@ -26,18 +25,14 @@ class FastAPIAdmin(FastAPI):
     async def configure(
             self,
             redis: Redis,
-            logo_url: str = None,
-            default_locale: str = "en_US",
-            language_switch: bool = True,
+            logo_url: Optional[str] = None,
             admin_path: str = "/admin",
             template_folders: Optional[List[str]] = None,
             providers: Optional[List[Provider]] = None,
             favicon_url: Optional[HttpUrl] = None,
     ):
         self.redis = redis
-        i18n.set_locale(default_locale)
         self.admin_path = admin_path
-        self.language_switch = language_switch
         self.logo_url = logo_url
         self.favicon_url = favicon_url
         if template_folders:
