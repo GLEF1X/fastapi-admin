@@ -93,7 +93,7 @@ class SimpleI18nMiddleware(I18nMiddleware):
         if locale is None:
             return self.i18n.default_locale
 
-        parsed_locale = Locale.parse(locale, sep="-")
+        parsed_locale = Locale.parse(locale)
         if parsed_locale.language not in self.i18n.available_locales:
             return self.i18n.default_locale
         return cast(str, parsed_locale.language)

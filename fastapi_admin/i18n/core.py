@@ -4,8 +4,10 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Dict, Generator, Optional, Tuple
 
+from fastapi_admin.i18n.context import gettext
 from fastapi_admin.i18n.lazy_proxy import LazyProxy
 from fastapi_admin.mixins import ContextInstanceMixin
+from fastapi_admin.template import templates
 
 
 class I18n(ContextInstanceMixin["I18n"]):
@@ -48,8 +50,10 @@ class I18n(ContextInstanceMixin["I18n"]):
         """
         token = self.set_current(self)
         try:
+            templates.env.install_gettext_callables(self.gettext, self.gettext)
             yield self
         finally:
+            templates.env.uninstall_gettext_callables()
             self.reset_current(token)
 
     def find_locales(self) -> Dict[str, gettext.GNUTranslations]:
@@ -89,14 +93,6 @@ class I18n(ContextInstanceMixin["I18n"]):
     def gettext(
             self, singular: str, plural: Optional[str] = None, n: int = 1, locale: Optional[str] = None
     ) -> str:
-        """
-        Get text
-        :param singular:
-        :param plural:
-        :param n:
-        :param locale:
-        :return:
-        """
         if locale is None:
             locale = self.current_locale
 
